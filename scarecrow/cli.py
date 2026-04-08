@@ -36,13 +36,15 @@ def _crop_for_ocr(img, bbox, pad=OCR_PAD):
 
 
 def _read_plate(reader, crop):
-    """Read plate text from a crop using easyocr. Selects the largest text region."""
-    results = reader.readtext(crop[:, :, ::-1], allowlist=_PLATE_CHARS)
-    if not results:
+    """Read plate text from a crop. Selects the largest text region."""
+    bgr = cv2.cvtColor(crop, cv2.COLOR_RGB2BGR)
+    result, _ = reader(bgr)
+    if not result:
         return ""
-    # easyocr bbox: [[x1,y1], [x2,y1], [x2,y2], [x1,y2]]
-    best = max(results, key=lambda r: (r[0][2][1] - r[0][0][1]) * (r[0][1][0] - r[0][0][0]))
-    return best[1].strip()
+    # result: list of (bbox, text, conf); bbox is [[x1,y1],[x2,y1],[x2,y2],[x1,y2]]
+    best = max(result, key=lambda r: (r[0][2][1] - r[0][0][1]) * (r[0][1][0] - r[0][0][0]))
+    # Filter to plate characters only
+    return "".join(c for c in best[1].strip().upper() if c in _PLATE_CHARS)
 
 
 def _cmd_optimize(args) -> int:
@@ -95,11 +97,11 @@ def _cmd_eval(args) -> int:
     ocr_reader = None
     if args.ocr:
         try:
-            import easyocr
+            from rapidocr_onnxruntime import RapidOCR
         except ImportError:
-            print("easyocr required for --ocr. Install: uv sync --extra ocr", file=sys.stderr)
+            print("rapidocr-onnxruntime required for --ocr. Install: uv sync --extra ocr", file=sys.stderr)
             return 1
-        ocr_reader = easyocr.Reader(["en"], gpu=True, verbose=False)
+        ocr_reader = RapidOCR()
 
     total, evaded, tiny_skipped = 0, 0, 0
     conf_clean_sum, conf_adv_sum = 0.0, 0.0
@@ -183,7 +185,7 @@ def main() -> int:
     ev.add_argument("input", help="Image file or directory")
     ev.add_argument("--pattern", required=True, help="Pattern PNG")
     ev.add_argument("--weights", default="license-plate-finetune-v1n.pt2", help="Model weights file")
-    ev.add_argument("--ocr", action="store_true", help="Evaluate OCR corruption (requires easyocr)")
+    ev.add_argument("--ocr", action="store_true", help="Evaluate OCR corruption (requires rapidocr)")
 
     args = p.parse_args()
     cmd = {"optimize": _cmd_optimize, "apply": _cmd_apply, "eval": _cmd_eval}

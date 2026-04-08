@@ -29,7 +29,7 @@ To keep the pattern from overfitting to the reference photo, each optimization s
 
 Flock and most ALPR cameras are rear-facing, [mounted at 8 to 12 feet](https://www.flocksafety.com/implementation-guide), so the viewing geometry is fairly constrained. The augmentation ranges were chosen with this in mind: rotation stays within 10 degrees, perspective within 20 to 25 degrees, and scale varies from 0.5x to 1.2x to cover plates captured at different distances from the camera.
 
-This is Expectation over Transformation (EoT), which keeps the pattern from overfitting to the reference photo. The loss function uses logsumexp to upweight the hardest samples, so the optimization focuses on conditions where the pattern is weakest.
+This is Expectation over Transformation (EoT). The loss function uses logsumexp to upweight the hardest samples, so the optimization focuses on conditions where the pattern is weakest.
 
 The included detection model is a [YOLO11n](https://huggingface.co/morsetechlab/yolov11-license-plate-detection) plate detector exported via `torch.export`. If you're targeting a different detector, see [Using your own detection model](#using-your-own-detection-model) below.
 
@@ -41,7 +41,7 @@ On the included test plate, scarecrow drops detection confidence from 0.84 to 0.
 |---|---|
 | ![before](assets/before.jpg) | ![after](assets/after.jpg) |
 
-OCR is also corrupted in evaluation, likely because the frame pattern bleeds into the surrounding region that OCR models use as context. In a real pipeline, full detection evasion would also mean OCR never runs, since it depends on the detector to localize the plate first.
+OCR is sometimes corrupted as a side effect, depending on the OCR model. The frame pattern doesn't touch the plate text, but it can bleed into the surrounding region some models use as context. Detection evasion is the primary defense. To my knowledge, Flock's on-device model detects vehicles, not just plates, so the image likely gets uploaded regardless. The cloud pipeline then runs its own OCR on a separate crop. Adding OCR corruption directly to the loss function is planned.
 
 ## Usage
 
@@ -65,7 +65,7 @@ scarecrow apply plate.jpg --pattern pattern.png
 # Evaluate detection evasion
 scarecrow eval plate.jpg --pattern pattern.png
 
-# Evaluate OCR corruption (requires easyocr: uv sync --extra ocr)
+# Evaluate OCR corruption (requires rapidocr: uv sync --extra ocr)
 scarecrow eval plate.jpg --pattern pattern.png --ocr
 ```
 

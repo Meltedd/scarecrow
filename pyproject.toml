@@ -9,7 +9,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-ocr = ["easyocr>=1.7"]
+ocr = ["rapidocr-onnxruntime>=1.4"]
 
 [build-system]
 requires = ["hatchling"]

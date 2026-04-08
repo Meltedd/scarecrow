@@ -37,6 +37,10 @@ The included detection model is a [YOLO11n](https://huggingface.co/morsetechlab/
 
 On the included test plate, scarecrow drops detection confidence from 0.84 to 0.00 (full evasion) in 1000 steps, and the plate remains human-readable.
 
+| Before | After |
+|---|---|
+| ![before](assets/before.jpg) | ![after](assets/after.jpg) |
+
 OCR is also corrupted in evaluation, likely because the frame pattern bleeds into the surrounding region that OCR models use as context. In a real pipeline, full detection evasion would also mean OCR never runs, since it depends on the detector to localize the plate first.
 
 ## Usage

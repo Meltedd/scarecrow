@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "An adversarial frame pattern optimizer for evading automated license plate recognition, personalized to your plate."
 requires-python = ">=3.11"
 license = "GPL-3.0-only"
+authors = [{ name = "Max Harari" }]
 dependencies = [
     "torch>=2.11",
     "opencv-python-headless>=4.8",
@@ -11,6 +12,9 @@ dependencies = [
 
 [project.optional-dependencies]
 ocr = ["rapidocr-onnxruntime>=1.4"]
+
+[project.urls]
+Repository = "https://github.com/Meltedd/scarecrow"
 
 [build-system]
 requires = ["hatchling"]

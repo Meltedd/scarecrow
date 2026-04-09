@@ -37,12 +37,3 @@ select = ["E", "F", "I"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-
-[[tool.uv.index]]
-name = "pytorch-cu130"
-url = "https://download.pytorch.org/whl/cu130"
-explicit = true
-
-[tool.uv.sources]
-torch = [{ index = "pytorch-cu130" }]
-

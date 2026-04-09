@@ -71,6 +71,9 @@ scarecrow eval plate.jpg --pattern pattern.png --ocr
 
 ## Using your own detection model
 
+> [!WARNING]
+> `.pt2` files should only be loaded from trusted sources. See [Security](#security).
+
 Scarecrow works with any plate detection model, not just the included YOLO11n. The model needs to be in `torch.export` format (`.pt2`).
 
 If you have ultralytics `.pt` weights, you can convert them like this:
@@ -92,6 +95,12 @@ Then pass `--weights your-model.pt2` to any scarecrow command.
 I haven't tested this against a real ALPR camera. So far the optimization has only run in simulation against rendered composites. If you have access to Flock or other ALPR hardware and can benchmark, I'd love to hear how it performs.
 
 The included model is a single YOLO11n plate detector. Adversarial patterns can transfer across similar architectures, but how well they transfer to other detectors (including Flock Safety's proprietary YOLO variant) is untested.
+
+## Security
+
+`torch.export.load` uses pickle, so loading an untrusted `.pt2` file can execute arbitrary code. Only use `--weights` from sources you trust.
+
+The bundled `license-plate-finetune-v1n.pt2` has its SHA-256 pinned in `scarecrow/model.py` and is verified before loading. The check matches by filename, so custom weights should be saved under a different name.
 
 ## License
 

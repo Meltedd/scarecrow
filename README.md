@@ -1,6 +1,6 @@
 # scarecrow
 
-Adversarial pattern optimization for evading automated license plate recognition. Given a photo of your plate, scarecrow generates a printable grayscale frame pattern that suppresses plate detection while keeping the plate fully readable to humans.
+Adversarial frame pattern optimization for evading automated license plate recognition. Given a photo of your plate, scarecrow generates a printable grayscale pattern that suppresses detection while keeping the plate readable to humans.
 
 [Keeps the flock away.](https://www.eff.org/deeplinks/2025/12/effs-investigations-expose-flock-safetys-surveillance-abuses-2025-review)
 

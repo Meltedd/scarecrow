@@ -1,7 +1,7 @@
 [project]
 name = "scarecrow"
 version = "0.1.0"
-description = "Adversarial license plate frame pattern generator"
+description = "An adversarial frame pattern optimizer for evading automated license plate recognition, personalized to your plate."
 requires-python = ">=3.11"
 license = "GPL-3.0-only"
 dependencies = [

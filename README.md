@@ -92,3 +92,7 @@ Then pass `--weights your-model.pt2` to any scarecrow command.
 I haven't tested this against a real ALPR camera. So far the optimization has only run in simulation against rendered composites. If you have access to Flock or other ALPR hardware and can benchmark, I'd love to hear how it performs.
 
 The included model is a single YOLO11n plate detector. Adversarial patterns can transfer across similar architectures, but how well they transfer to other detectors (including Flock Safety's proprietary YOLO variant) is untested.
+
+## License
+
+GPL-3.0. See [LICENSE](LICENSE).

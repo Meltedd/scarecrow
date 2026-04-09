@@ -9,6 +9,7 @@ import numpy as np
 
 from scarecrow.io import image_paths, load, load_pattern, save, save_pattern
 from scarecrow.mask import frame_mask
+from scarecrow.model import DEFAULT_WEIGHTS_FILENAME
 
 OCR_PAD = 0.15
 _PLATE_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-"
@@ -171,20 +172,20 @@ def main() -> int:
 
     opt = sub.add_parser("optimize", help="Optimize adversarial frame pattern")
     opt.add_argument("input", help="Plate image file")
-    opt.add_argument("--weights", default="license-plate-finetune-v1n.pt2", help="Model weights file")
+    opt.add_argument("--weights", default=DEFAULT_WEIGHTS_FILENAME, help="Model weights file")
     opt.add_argument("--steps", type=int, default=1000)
     opt.add_argument("-o", "--output", help="Output pattern path (default: pattern.png)")
 
     ap = sub.add_parser("apply", help="Apply pattern to a plate image")
     ap.add_argument("input", help="Input image")
     ap.add_argument("--pattern", required=True, help="Pattern PNG")
-    ap.add_argument("--weights", default="license-plate-finetune-v1n.pt2", help="Model weights file")
+    ap.add_argument("--weights", default=DEFAULT_WEIGHTS_FILENAME, help="Model weights file")
     ap.add_argument("-o", "--output", help="Output image path")
 
     ev = sub.add_parser("eval", help="Evaluate pattern effectiveness")
     ev.add_argument("input", help="Image file or directory")
     ev.add_argument("--pattern", required=True, help="Pattern PNG")
-    ev.add_argument("--weights", default="license-plate-finetune-v1n.pt2", help="Model weights file")
+    ev.add_argument("--weights", default=DEFAULT_WEIGHTS_FILENAME, help="Model weights file")
     ev.add_argument("--ocr", action="store_true", help="Evaluate OCR corruption (requires rapidocr)")
 
     args = p.parse_args()

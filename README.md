@@ -1,6 +1,6 @@
 # scarecrow
 
-Adversarial pattern optimization for evading automated license plate recognition. Given a photo of your plate, scarecrow generates a printable grayscale frame pattern that suppresses YOLO-based plate detectors while keeping the plate fully readable to humans.
+Adversarial pattern optimization for evading automated license plate recognition. Given a photo of your plate, scarecrow generates a printable grayscale frame pattern that suppresses plate detection while keeping the plate fully readable to humans.
 
 [Keeps the flock away.](https://www.eff.org/deeplinks/2025/12/effs-investigations-expose-flock-safetys-surveillance-abuses-2025-review)
 
@@ -11,7 +11,7 @@ Adversarial pattern optimization for evading automated license plate recognition
 
 Flock Safety and other ALPR cameras are in thousands of neighborhoods, parking lots, and police networks across the US. They capture and index every plate that passes, feeding a searchable surveillance database with no warrant, no notification, and in most cases no public oversight.
 
-I think there's something fundamentally wrong with a system that can track anyone, anywhere, with no transparency or accountability. This project is my way of exploring what can be done about it.
+A system that can track anyone, anywhere, with no transparency or accountability is [fundamentally immoral](https://philzimmermann.com/EN/essays/WhyIWrotePGP.html). This project is my way of exploring what can be done about it.
 
 Inspired by Ben Jordan's [PlateShapez](https://github.com/bennjordan/PlateShapez) and his investigations into Flock Safety. Where his approach uses random geometric perturbations on the plate, scarecrow uses gradient-based optimization of a frame pattern around it, aiming to be more robust and legally viable since the plate itself is never altered.
 
@@ -41,11 +41,11 @@ On the included test plate, scarecrow drops detection confidence from 0.84 to 0.
 |---|---|
 | ![before](assets/before.jpg) | ![after](assets/after.jpg) |
 
-OCR is sometimes corrupted as a side effect, depending on the OCR model. The frame pattern doesn't touch the plate text, but it can bleed into the surrounding region some models use as context. Detection evasion is the primary defense. To my knowledge, Flock's on-device model detects vehicles, not just plates, so the image likely gets uploaded regardless. The cloud pipeline then runs its own OCR on a separate crop. Adding OCR corruption directly to the loss function is planned.
+OCR is sometimes corrupted as a side effect, though it's not entirely clear why. The frame pattern doesn't touch the plate text, but it may bleed into the surrounding region some models use as context. To my knowledge, Flock's on-device model detects vehicles, not just plates, so the image likely gets uploaded regardless and OCR runs separately in the cloud. Adding OCR corruption directly to the loss function is planned but not yet implemented.
 
 ## Usage
 
-Requires Python 3.11+. A CUDA GPU is recommended; CPU works but optimization will take longer.
+Requires Python 3.11+. A CUDA GPU is recommended but not required, as optimization also works on CPU (slower).
 
 Install dependencies:
 
@@ -53,7 +53,7 @@ Install dependencies:
 uv sync
 ```
 
-Take a photo of your plate straight-on with even lighting and minimal angle. This is the reference image the optimization works from. See `test_plate.jpg` for an example.
+Take a photo of your plate from the front, straight on, with even lighting and minimal angle. This is the reference image the optimization works from. See `test_plate.jpg` for an example.
 
 ```bash
 # Optimize a frame pattern for your plate (takes a few minutes on GPU)
@@ -71,7 +71,7 @@ scarecrow eval plate.jpg --pattern pattern.png --ocr
 
 ## Using your own detection model
 
-Scarecrow works with any single-class plate detector, not just the included YOLO11n. The model needs to be in `torch.export` format (`.pt2`).
+Scarecrow works with any plate detection model, not just the included YOLO11n. The model needs to be in `torch.export` format (`.pt2`).
 
 If you have ultralytics `.pt` weights, you can convert them like this:
 
@@ -89,6 +89,6 @@ Then pass `--weights your-model.pt2` to any scarecrow command.
 
 ## Limitations
 
-I haven't tested this against a real ALPR camera yet. The optimization runs in simulation against rendered composites. If you have access to Flock or other ALPR hardware and can benchmark, I'd love to hear how it performs.
+I haven't tested this against a real ALPR camera. So far the optimization has only run in simulation against rendered composites. If you have access to Flock or other ALPR hardware and can benchmark, I'd love to hear how it performs.
 
 The included model is a single YOLO11n plate detector. Adversarial patterns can transfer across similar architectures, but how well they transfer to other detectors (including Flock Safety's proprietary YOLO variant) is untested.

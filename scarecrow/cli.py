@@ -51,7 +51,7 @@ def _read_plate(reader, crop):
 def _cmd_optimize(args) -> int:
     from scarecrow.optimize import Config, optimize
 
-    config = Config(steps=args.steps)
+    config = Config(steps=args.steps, seed=args.seed)
 
     def on_step(step, loss):
         if step % 25 == 0 or step == config.steps - 1:
@@ -174,6 +174,7 @@ def main() -> int:
     opt.add_argument("input", help="Plate image file")
     opt.add_argument("--weights", default=DEFAULT_WEIGHTS_FILENAME, help="Model weights file")
     opt.add_argument("--steps", type=int, default=1000)
+    opt.add_argument("--seed", type=int, default=None, help="Random seed for reproducibility")
     opt.add_argument("-o", "--output", help="Output pattern path (default: pattern.png)")
 
     ap = sub.add_parser("apply", help="Apply pattern to a plate image")

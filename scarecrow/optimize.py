@@ -28,6 +28,7 @@ class Config:
     eot_samples: int = 4
     batch_size: int = 2
     imgsz: int = 640
+    seed: int | None = None
 
 
 def composite(images: torch.Tensor, masks: torch.Tensor, pattern: torch.Tensor) -> torch.Tensor:
@@ -48,19 +49,18 @@ def _composite_letterbox(
 
 
 def eot_transform(images: torch.Tensor, rng: torch.Generator) -> torch.Tensor:
-    """Differentiable EoT augmentations: rotation, perspective, brightness, blur, noise, scale."""
+    """Differentiable EoT augmentations simulating real-world camera variation."""
     B, C, H, W = images.shape
     device = images.device
 
-    # Geometric: rotation +/-10 deg, perspective tilt +/-20 deg, pan +/-25 deg
-    # Combined into one grid_sample to avoid compounding interpolation blur
+    # Radial distortion + rotation + perspective, composed into one grid_sample
     rot = 20 * (torch.rand(B, device=device, generator=rng) - 0.5)
     tilt = 40 * (torch.rand(B, device=device, generator=rng) - 0.5)
     pan = 50 * (torch.rand(B, device=device, generator=rng) - 0.5)
+    k1 = 0.3 * (torch.rand(1, device=device, generator=rng).item() - 0.5)
 
-    rad_r = torch.deg2rad(rot)
-    cos_r = torch.cos(rad_r)
-    sin_r = torch.sin(rad_r)
+    rad = torch.deg2rad(rot)
+    cos_r, sin_r = torch.cos(rad), torch.sin(rad)
     px = torch.sin(torch.deg2rad(pan)) / 2.0
     py = torch.sin(torch.deg2rad(tilt)) / 2.0
 
@@ -73,10 +73,14 @@ def eot_transform(images: torch.Tensor, rng: torch.Generator) -> torch.Tensor:
     M[:, 2, 1] = -px * sin_r + py * cos_r
     M[:, 2, 2] = 1.0
 
-    gy = torch.linspace(-1, 1, H, device=device)
-    gx = torch.linspace(-1, 1, W, device=device)
-    yy, xx = torch.meshgrid(gy, gx, indexing="ij")
-    base = torch.stack([xx, yy, torch.ones_like(xx)], dim=0).reshape(3, -1)
+    yy, xx = torch.meshgrid(
+        torch.linspace(-1, 1, H, device=device),
+        torch.linspace(-1, 1, W, device=device),
+        indexing="ij",
+    )
+    r2 = xx * xx + yy * yy
+    rd = 1.0 + k1 * r2
+    base = torch.stack([xx * rd, yy * rd, torch.ones_like(xx)], dim=0).reshape(3, -1)
     warped = torch.bmm(M, base.unsqueeze(0).expand(B, -1, -1))
     grid = (warped[:, :2] / warped[:, 2:3]).permute(0, 2, 1).reshape(B, H, W, 2)
 
@@ -84,15 +88,12 @@ def eot_transform(images: torch.Tensor, rng: torch.Generator) -> torch.Tensor:
         images, grid, mode="bilinear", padding_mode="reflection", align_corners=False
     )
 
-    # Brightness +/-0.1
     brightness = 1.0 + 0.2 * (torch.rand(B, 1, 1, 1, device=device, generator=rng) - 0.5)
     images = images * brightness
 
-    # Contrast 0.8-1.2
     contrast = 0.8 + 0.4 * torch.rand(B, 1, 1, 1, device=device, generator=rng)
     images = (images - 0.5) * contrast + 0.5
 
-    # Gaussian blur k=3
     sigma = 0.1 + 0.9 * torch.rand(1, device=device, generator=rng).item()
     ax = torch.arange(3, device=device, dtype=torch.float32) - 1
     kernel = torch.exp(-0.5 * (ax / sigma) ** 2)
@@ -100,11 +101,9 @@ def eot_transform(images: torch.Tensor, rng: torch.Generator) -> torch.Tensor:
     kernel_2d = (kernel[:, None] * kernel[None, :]).view(1, 1, 3, 3).expand(C, -1, -1, -1)
     images = F.conv2d(F.pad(images, [1, 1, 1, 1], mode="reflect"), kernel_2d, groups=C)
 
-    # Additive noise, random sigma 0.005-0.03
-    noise_sigma = 0.005 + 0.025 * torch.rand(1, device=device, generator=rng).item()
-    images = images + torch.randn(B, C, H, W, device=device, generator=rng) * noise_sigma
+    noise_std = 0.005 + 0.025 * torch.rand(1, device=device, generator=rng).item()
+    images = images + torch.randn(B, C, H, W, device=device, generator=rng) * noise_std
 
-    # Scale jitter 0.5-1.2
     scale = 0.5 + 0.7 * torch.rand(1, device=device, generator=rng).item()
     nh, nw = int(H * scale), int(W * scale)
     images = F.interpolate(
@@ -171,10 +170,12 @@ def optimize(
     )
     opt = torch.optim.Adam([pattern], lr=config.lr)
     rng = torch.Generator(device=device)
+    if config.seed is not None:
+        rng.manual_seed(config.seed)
 
     tau = 3.0
     for step in range(config.steps):
-        idx = torch.randperm(len(dataset), device=device)[:config.batch_size]
+        idx = torch.randperm(len(dataset), device=device, generator=rng)[:config.batch_size]
         batch_items = [dataset[i] for i in idx.tolist()]
 
         composited = _composite_letterbox(pattern, batch_items, config.imgsz)

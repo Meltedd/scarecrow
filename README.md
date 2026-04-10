@@ -21,6 +21,7 @@ Scarecrow optimizes a grayscale frame pattern using gradient descent against a Y
 
 To keep the pattern from overfitting to the reference photo, each optimization step applies random augmentations that simulate what a camera might actually see:
 
+- **Radial lens distortion** to simulate barrel/pincushion from real camera optics
 - **Rotation and perspective warp** to simulate different viewing angles
 - **Brightness and contrast shifts** for varying lighting and IR illumination
 - **Gaussian blur** for distance and motion
@@ -41,7 +42,7 @@ On the included test plate, scarecrow drops detection confidence from 0.84 to 0.
 |---|---|
 | ![before](assets/before.jpg) | ![after](assets/after.jpg) |
 
-OCR is sometimes corrupted as a side effect, though it's not entirely clear why. The frame pattern doesn't touch the plate text, but it may bleed into the surrounding region some models use as context. To my knowledge, Flock's on-device model detects vehicles, not just plates, so the image likely gets uploaded regardless and OCR runs separately in the cloud. Adding OCR corruption directly to the loss function is planned but not yet implemented.
+OCR is sometimes corrupted as a side effect, roughly 40% of the time depending on the random seed. The frame pattern doesn't touch the plate text, but it bleeds slightly into the surrounding region some models use as context. To my knowledge, Flock's on-device model detects vehicles, not just plates, so the image likely gets uploaded regardless and OCR runs separately in the cloud. I plan to additionally target OCR corruption in the loss function if it is viable.
 
 ## Usage
 
@@ -58,6 +59,9 @@ Take a photo of your plate from the front, straight on, with even lighting and m
 ```bash
 # Optimize a frame pattern for your plate (takes a few minutes on GPU)
 scarecrow optimize plate.jpg
+
+# Reproducible optimization with a fixed seed
+scarecrow optimize plate.jpg --seed 42
 
 # Preview the result
 scarecrow apply plate.jpg --pattern pattern.png

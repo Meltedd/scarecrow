@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import torch
 
@@ -6,10 +8,12 @@ from scarecrow.model import _nms, letterbox
 from scarecrow.optimize import (
     PATTERN_H,
     PATTERN_W,
+    Config,
     PlateData,
     _composite_letterbox,
     composite,
     eot_transform,
+    optimize,
 )
 
 
@@ -145,3 +149,23 @@ class TestPatternRoundTrip:
         save_pattern(pattern, path)
         loaded = load_pattern(path)
         np.testing.assert_allclose(loaded, pattern, atol=1 / 255 + 1e-6)
+
+
+class TestOptimizeReproducibility:
+    def test_seed_determinism(self, monkeypatch):
+        """Same seed yields identical patterns; different seeds diverge."""
+        # Force CPU so grid_sample/interpolate backward stay deterministic.
+        monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
+
+        repo = Path(__file__).parent.parent
+        weights = str(repo / "license-plate-finetune-v1n.pt2")
+        image = str(repo / "test_plate.jpg")
+
+        base = Config(steps=3, eot_samples=2, batch_size=1, seed=42)
+        first = optimize(image, weights, base)
+        second = optimize(image, weights, base)
+        assert torch.equal(first, second)
+
+        alt = Config(steps=3, eot_samples=2, batch_size=1, seed=99)
+        third = optimize(image, weights, alt)
+        assert not torch.equal(first, third)
